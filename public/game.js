@@ -3,6 +3,22 @@ var gameState = function(){};
 var score = 0;
 var scoreDisplay;
 
+var env = {};
+env.getNumStates = function () { return 8; }
+env.getMaxNumActions = function () { return 3; }
+var spec = { };
+spec.update = 'qlearn';
+spec.gamme = .9;
+spec.epsilon = .2;
+spec.alpha = .01;
+var moves = [0,1,2];
+var agent = store.get ('agent') [0];
+if (agent === undefined) {
+  agent = new RL.DQNAgent(env, spec);
+  store.set ('agent', agent);
+}
+console.log("Agent:" + agent);
+
 gameState.prototype = {
 
 
@@ -14,13 +30,14 @@ gameState.prototype = {
 
   create: function(){
     this.game.delay = 0;
+    //console.log("Agent: " + agent);
     this.initializeScore();
     this.initializeSnake();
     this.createFood();
   },
 
   update: function() {
-    this.handleInput();
+    //this.handleInput(action);
     this.moveSnake();
   },
 
@@ -30,7 +47,14 @@ gameState.prototype = {
 
     //Add the food for the snake to grab.
     this.game.food = game.add.sprite(random_x_pos, random_y_pos, 'food');
-    console.log(this.game.food.x + "and " + this.game.food.y);
+  },
+
+  initializeAgent: function () {
+
+    var action = agent.act(s); // s is an array of length 8
+    // execute action in environment and get the reward
+    agent.learn(reward); // the agent improves its Q,policy,model, etc. reward is a float
+
   },
 
   initializeSnake: function() {
@@ -57,10 +81,11 @@ gameState.prototype = {
     this.game.add.text(70, 20, score.toString(), { font: "10px", fill: "#ffffff"});
   },
 
-  handleInput: function() {
+  handleInput: function(action) {
     //Keyboard input. Our indicated direction will be based on key press.
     this.game.keys = game.input.keyboard.createCursorKeys();
 
+    /*
     if(this.game.keys.right.isDown && this.game.snakeDirection !== 'left') {
       this.game.snakeDirection = 'right';
     }
@@ -72,37 +97,104 @@ gameState.prototype = {
     }
     if(this.game.keys.up.isDown && this.game.snakeDirection !== 'down') {
       this.game.snakeDirection = 'up';
-    }
+    }*/
   },
 
-  moveSnake: function() {
+  moveSnake: function(action) {
     //Move the snake by simply removing the last part of the snake and putting it at the front.
     //We only care about the positions of the head and tail, and we want to add the tail in front
     //of the head. So we need the size of the snake as well.
     //This delay is here because we want to not be as fast.
     this.game.delay++;
-
-    if(this.game.delay % 8 === 0) {
+    var action;
+    if(this.game.delay % 1 === 0) {
+      action = agent.act(moves);
       this.game.head = this.game.snake[this.game.snake.length - 1];
       this.game.tail = this.game.snake.shift();
+
+      var change_x = this.negativeCheck(this.game.head.x, this.game.food.x);
+      var change_y = this.negativeCheck(this.game.head.y, this.game.food.y);
+
       this.game.new_node_x = this.game.tail.x;
       this.game.new_node_y = this.game.tail.y;
+
       if(this.game.snakeDirection === 'right') {
-        this.game.tail.x = this.game.head.x + this.game.snakeSize;
-        this.game.tail.y = this.game.head.y;
+        if (action === 1) {
+          this.game.tail.x = this.game.head.x;
+          this.game.tail.y = this.game.head.y - this.game.snakeSize;
+          this.game.snakeDirection = 'up';
+        }
+
+        else if (action === 2) {
+          this.game.tail.x = this.game.head.x;
+          this.game.tail.y = this.game.head.y + this.game.snakeSize;
+          this.game.snakeDirection = 'down';
+        }
+
+        else if (action === 0) {
+          this.game.tail.x = this.game.head.x + this.game.snakeSize;
+          this.game.tail.y = this.game.head.y;
+        } 
+
       } else if(this.game.snakeDirection === 'left') {
-        this.game.tail.x = this.game.head.x - this.game.snakeSize;
-        this.game.tail.y = this.game.head.y;
+        if (action === 1) {
+          this.game.tail.x = this.game.head.x;
+          this.game.tail.y = this.game.head.y + this.game.snakeSize;
+          this.game.snakeDirection = 'down';
+        }
+
+        else if (action === 2) {
+          this.game.tail.x = this.game.head.x;
+          this.game.tail.y = this.game.head.y - this.game.snakeSize;
+          this.game.snakeDirection = 'up';
+        }
+
+        else if (action === 0) {
+          this.game.tail.x = this.game.head.x - this.game.snakeSize;
+          this.game.tail.y = this.game.head.y;
+        }
+
       } else if(this.game.snakeDirection === 'up') {
-        this.game.tail.x = this.game.head.x;
-        this.game.tail.y = this.game.head.y - this.game.snakeSize;
+          if (action === 1) {
+            this.game.tail.x = this.game.head.x - this.game.snakeSize;
+            this.game.tail.y = this.game.head.y;
+            this.game.snakeDirection = 'left';
+          }
+
+          else if (action === 2) {
+            this.game.tail.x = this.game.head.x + this.game.snakeSize;
+            this.game.tail.y = this.game.head.y;
+            this.game.snakeDirection = 'right';
+          }
+
+          else if (action === 0) {
+            this.game.tail.x = this.game.head.x;
+            this.game.tail.y = this.game.head.y - this.game.snakeSize;
+          }
+
       } else if(this.game.snakeDirection === 'down') {
-        this.game.tail.x = this.game.head.x;
-        this.game.tail.y = this.game.head.y + this.game.snakeSize;
+          if (action === 1) {
+            this.game.tail.x = this.game.head.x + this.game.snakeSize;
+            this.game.tail.y = this.game.head.y;
+            this.game.snakeDirection = 'right';
+          }
+
+          else if (action === 2) {
+            this.game.tail.x = this.game.head.x - this.game.snakeSize;
+            this.game.tail.y = this.game.head.y;
+            this.game.snakeDirection = 'left';
+          }
+
+          else if (action === 0) {
+            this.game.tail.x = this.game.head.x;
+            this.game.tail.y = this.game.head.y + this.game.snakeSize;
+          }
       }
 
+      console.log("x:" + this.game.head.x + " y: " + this.game.head.y);
       this.game.snake.push(this.game.tail);
 
+      this.rewardDistance (change_x, change_y);
       this.checkCollisions();
     }
 
@@ -128,6 +220,7 @@ gameState.prototype = {
     if(this.game.food.x === this.game.head.x && this.game.food.y === this.game.head.y) {
       console.log("COLLISION");
       this.game.goodCollision = true;
+      agent.learn(2);
       this.game.food.destroy();
       this.createFood();
     }
@@ -135,10 +228,64 @@ gameState.prototype = {
     if(this.game.fatalCollision) {
       game.state.start('gameState');
       score = 0;
+      agent.learn(-2);
+      store.set ('agent', agent);
+      console.log("GAME END");
     } else if(this.game.goodCollision) {
       this.game.snake.unshift(game.add.sprite(this.game.new_node_x, this.game.new_node_y, 'snake'));
       score++;
       this.updateScore();
+    }
+    agent.learn(.2);
+  },
+
+  rewardDistance: function (first_x, first_y) {
+    //Need x and y of head of snake
+    var head_x = this.game.head.x;
+    var head_y = this.game.head.y;
+
+    //Need x and y of apple
+    var apple_x = this.game.food.x;
+    var apple_y = this.game.food.y;
+
+    //Compute distance between
+    var new_x = this.negativeCheck (head_x, apple_x);
+    var new_y = this.negativeCheck (head_y, apple_y);
+    
+    if(new_x > first_x && new_y > first_y) {
+      agent.learn (-.5);
+    } else if (new_x < first_x && nex_y < first_y) {
+        agent.learn (.5);
+    }
+
+  },
+
+  //Deals with negatives in the x and y
+  negativeCheck: function (num1, num2) {
+    if (num1 >= 0 && num2 >= 0) {
+      if (num1 > num2) {
+        return num1 - num2;
+      }
+      else {
+        return num2 - num1;
+      }
+    }
+
+    else if (num1 < 0 && num2 < 0) {
+      if (num1 > num2) {
+        num1 = Math.abs (num1);
+        return num1 - num2;
+      }
+      else {
+        num2 = Math.abs (num2)
+        return num2 - num1;
+      }
+    }
+
+    else {
+      num1 = Math.abs (num1);
+      num2 = Math.abs (num2);
+      return num1 + num2;
     }
   }
 

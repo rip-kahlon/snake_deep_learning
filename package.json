@@ -17,7 +17,9 @@
   },
   "homepage": "https://github.com/ripsquared/snake_deep_learning#readme",
   "dependencies": {
+    "@tensorflow/tfjs": "^0.9.1",
     "express": "^4.16.3",
-    "phaser": "^3.4.0"
+    "phaser": "^3.4.0",
+    "store": "^2.0.12"
   }
 }

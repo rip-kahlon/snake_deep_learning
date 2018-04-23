@@ -9,7 +9,7 @@ env.getMaxNumActions = function () { return 3; }
 var spec = { };
 spec.update = 'qlearn';
 spec.gamme = .9;
-spec.epsilon = .2;
+spec.epsilon = .1;
 spec.alpha = .01;
 var moves = [0,1,2];
 var agent = store.get ('agent') [0];
@@ -112,17 +112,25 @@ gameState.prototype = {
       this.game.head = this.game.snake[this.game.snake.length - 1];
       this.game.tail = this.game.snake.shift();
 
-      var change_x = this.negativeCheck(this.game.head.x, this.game.food.x);
-      var change_y = this.negativeCheck(this.game.head.y, this.game.food.y);
+      var current_head_x = this.game.head.x;
+      var current_head_y = this.game.head.y;
+
+      var change_x = this.negativeCheck(current_head_x, this.game.food.x);
+      var change_y = this.negativeCheck(current_head_y, this.game.food.y);
+      
+      var wall_change_x;
+      var wall_change_y;
 
       this.game.new_node_x = this.game.tail.x;
       this.game.new_node_y = this.game.tail.y;
 
       if(this.game.snakeDirection === 'right') {
+        wall_change_x = 600;
         if (action === 1) {
           this.game.tail.x = this.game.head.x;
           this.game.tail.y = this.game.head.y - this.game.snakeSize;
           this.game.snakeDirection = 'up';
+          
         }
 
         else if (action === 2) {
@@ -137,6 +145,7 @@ gameState.prototype = {
         } 
 
       } else if(this.game.snakeDirection === 'left') {
+        wall_change_x = -200;
         if (action === 1) {
           this.game.tail.x = this.game.head.x;
           this.game.tail.y = this.game.head.y + this.game.snakeSize;
@@ -155,6 +164,7 @@ gameState.prototype = {
         }
 
       } else if(this.game.snakeDirection === 'up') {
+          wall_change_y = -75;
           if (action === 1) {
             this.game.tail.x = this.game.head.x - this.game.snakeSize;
             this.game.tail.y = this.game.head.y;
@@ -173,6 +183,7 @@ gameState.prototype = {
           }
 
       } else if(this.game.snakeDirection === 'down') {
+          wall_change_y = 525;
           if (action === 1) {
             this.game.tail.x = this.game.head.x + this.game.snakeSize;
             this.game.tail.y = this.game.head.y;
@@ -191,11 +202,14 @@ gameState.prototype = {
           }
       }
 
-      console.log("x:" + this.game.head.x + " y: " + this.game.head.y);
+      //console.log("x:" + this.game.head.x + " y: " + this.game.head.y);
       this.game.snake.push(this.game.tail);
-
+      
+      
       this.rewardDistance (change_x, change_y);
+      this.wallCheck ();
       this.checkCollisions();
+      agent.learn (5);
     }
 
   },
@@ -220,23 +234,24 @@ gameState.prototype = {
     if(this.game.food.x === this.game.head.x && this.game.food.y === this.game.head.y) {
       console.log("COLLISION");
       this.game.goodCollision = true;
-      agent.learn(2);
       this.game.food.destroy();
       this.createFood();
     }
 
     if(this.game.fatalCollision) {
-      game.state.start('gameState');
-      score = 0;
-      agent.learn(-2);
+      agent.learn(-200);
       store.set ('agent', agent);
       console.log("GAME END");
+      game.state.start('gameState');
+      score = 0;
+
     } else if(this.game.goodCollision) {
       this.game.snake.unshift(game.add.sprite(this.game.new_node_x, this.game.new_node_y, 'snake'));
       score++;
       this.updateScore();
+      agent.learn(100);
     }
-    agent.learn(.2);
+    
   },
 
   rewardDistance: function (first_x, first_y) {
@@ -253,9 +268,9 @@ gameState.prototype = {
     var new_y = this.negativeCheck (head_y, apple_y);
     
     if(new_x > first_x && new_y > first_y) {
-      agent.learn (-.5);
+      agent.learn (-10);
     } else if (new_x < first_x && nex_y < first_y) {
-        agent.learn (.5);
+        agent.learn (10);
     }
 
   },
@@ -287,6 +302,27 @@ gameState.prototype = {
       num2 = Math.abs (num2);
       return num1 + num2;
     }
+  },
+
+  //If head gets close to the wall, give agent a negative score
+  wallCheck: function () {
+    //Get wall placement
+    var right_wall = 600;
+    var left_wall = -200
+    var top_wall = 525;
+    var bottom_wall = -75;
+
+
+    //Check how close the head is to the wall
+    var right_difference = this.negativeCheck (this.game.head.x, right_wall);
+    var left_difference = this.negativeCheck (this.game.head.x, left_wall);
+    var top_difference = this.negativeCheck (this.game.head.y, top_wall);
+    var bottom_difference = this.negativeCheck (this.game.head.y, bottom_wall);
+
+    //If within 50, give a negative score
+    if (right_difference <= 50 || left_difference <= 50 || top_difference <= 50 || bottom_difference <= 50) {
+      agent.learn (-25);
+    } 
   }
 
 };

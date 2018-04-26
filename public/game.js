@@ -10,7 +10,7 @@ var spec = { };
 spec.update = 'qlearn';
 spec.gamme = .9;
 spec.epsilon = .1;
-spec.alpha = .01;
+spec.alpha = .5;
 var moves = [0,1,2];
 var agent = store.get ('agent') [0];
 if (agent === undefined) {
@@ -18,6 +18,9 @@ if (agent === undefined) {
   store.set ('agent', agent);
 }
 console.log("Agent:" + agent);
+
+var game_counter = 0; //Keeps track of games played
+var score_amt = 0; //Keeps track of total goals scored
 
 gameState.prototype = {
 
@@ -37,7 +40,9 @@ gameState.prototype = {
   },
 
   update: function() {
-    //this.handleInput(action);
+    if (game_counter == 100) {
+      this.getProgress ();
+    }
     this.moveSnake();
   },
 
@@ -107,7 +112,7 @@ gameState.prototype = {
     //This delay is here because we want to not be as fast.
     this.game.delay++;
     var action;
-    if(this.game.delay % 1 === 0) {
+    if(true) {
       action = agent.act(moves);
       this.game.head = this.game.snake[this.game.snake.length - 1];
       this.game.tail = this.game.snake.shift();
@@ -209,7 +214,7 @@ gameState.prototype = {
       this.rewardDistance (change_x, change_y);
       this.wallCheck ();
       this.checkCollisions();
-      agent.learn (5);
+      
     }
 
   },
@@ -221,7 +226,7 @@ gameState.prototype = {
 
     for(var i = 0; i < this.game.snake.length - 2; i++) {
       if(this.game.head.x === this.game.snake[i].x && this.game.head.y === this.game.snake[i].y) {
-        console.log('Collision');
+        //console.log('Collision');
         this.game.fatalCollision = true;
       }
     }
@@ -232,16 +237,16 @@ gameState.prototype = {
     }
 
     if(this.game.food.x === this.game.head.x && this.game.food.y === this.game.head.y) {
-      console.log("COLLISION");
+      //console.log("COLLISION");
       this.game.goodCollision = true;
       this.game.food.destroy();
       this.createFood();
     }
 
     if(this.game.fatalCollision) {
-      agent.learn(-200);
+      agent.learn(-400);
       store.set ('agent', agent);
-      console.log("GAME END");
+      game_counter ++;
       game.state.start('gameState');
       score = 0;
 
@@ -249,6 +254,7 @@ gameState.prototype = {
       this.game.snake.unshift(game.add.sprite(this.game.new_node_x, this.game.new_node_y, 'snake'));
       score++;
       this.updateScore();
+      score_amt ++;
       agent.learn(100);
     }
     
@@ -323,6 +329,19 @@ gameState.prototype = {
     if (right_difference <= 50 || left_difference <= 50 || top_difference <= 50 || bottom_difference <= 50) {
       agent.learn (-25);
     } 
+  },
+
+  //Function to be called to see if snake is getting better over time
+  getProgress: function () {
+    //Need to print death amount
+    console.log ("Games: " + game_counter);
+    //Need to print score
+    console.log ("Scores: " + score_amt);
+    //Print out a ratio of scores to deaths
+    console.log ("Score Death Ratio: " + score_amt/game_counter);
+    //Clear all values
+    game_counter = 0;
+    score_amt = 0;
   }
 
 };

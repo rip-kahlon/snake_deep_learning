@@ -1,11 +1,11 @@
 var gameState = function(){};
 
+//important globals
 var score = 0;
-var scoreDisplay;
-
 var env = {};
-env.getNumStates = function () { return 8; }
-env.getMaxNumActions = function () { return 3; }
+env.getNumStates = function () { return 8; };
+env.getMaxNumActions = function () { return 3; };
+
 var spec = { };
 spec.update = 'qlearn';
 spec.gamme = .9;
@@ -17,13 +17,11 @@ if (agent === undefined) {
   agent = new RL.DQNAgent(env, spec);
   store.set ('agent', agent);
 }
-console.log("Agent:" + agent);
 
 var game_counter = 0; //Keeps track of games played
 var score_amt = 0; //Keeps track of total goals scored
 
 gameState.prototype = {
-
 
   preload: function() {
     //Load the snake and the food that the snake will try to get.
@@ -31,16 +29,15 @@ gameState.prototype = {
     this.game.load.image('food', 'assets/food.png');
   },
 
-  create: function(){
+  create: function() {
     this.game.delay = 0;
-    //console.log("Agent: " + agent);
     this.initializeScore();
     this.initializeSnake();
     this.createFood();
   },
 
   update: function() {
-    if (game_counter == 100) {
+    if (game_counter === 100) {
       this.getProgress ();
     }
     this.moveSnake();
@@ -54,14 +51,6 @@ gameState.prototype = {
     this.game.food = game.add.sprite(random_x_pos, random_y_pos, 'food');
   },
 
-  initializeAgent: function () {
-
-    var action = agent.act(s); // s is an array of length 8
-    // execute action in environment and get the reward
-    agent.learn(reward); // the agent improves its Q,policy,model, etc. reward is a float
-
-  },
-
   initializeSnake: function() {
     //Initialize the snake. We will use keep track of all the parts of the snake and their positions.
     this.game.snake = [];
@@ -71,7 +60,7 @@ gameState.prototype = {
     var y_pos = 100;
 
     //Create the first 4 blocks of the snake so we have something to start with.
-    for(var i = 0; i < 6; i++) {
+    for(var i = 0; i < 4; i++) {
       this.game.snake[i] = game.add.sprite(x_pos + (i*this.game.snakeSize), y_pos, 'snake');
     }
   },
@@ -86,137 +75,33 @@ gameState.prototype = {
     this.game.add.text(70, 20, score.toString(), { font: "10px", fill: "#ffffff"});
   },
 
-  handleInput: function(action) {
-    //Keyboard input. Our indicated direction will be based on key press.
-    this.game.keys = game.input.keyboard.createCursorKeys();
-
-    /*
-    if(this.game.keys.right.isDown && this.game.snakeDirection !== 'left') {
-      this.game.snakeDirection = 'right';
-    }
-    if(this.game.keys.left.isDown && this.game.snakeDirection !== 'right') {
-      this.game.snakeDirection = 'left';
-    }
-    if(this.game.keys.down.isDown && this.game.snakeDirection !== 'up') {
-      this.game.snakeDirection = 'down';
-    }
-    if(this.game.keys.up.isDown && this.game.snakeDirection !== 'down') {
-      this.game.snakeDirection = 'up';
-    }*/
-  },
-
-  moveSnake: function(action) {
+  moveSnake: function() {
     //Move the snake by simply removing the last part of the snake and putting it at the front.
     //We only care about the positions of the head and tail, and we want to add the tail in front
     //of the head. So we need the size of the snake as well.
     //This delay is here because we want to not be as fast.
     this.game.delay++;
     var action;
-    if(true) {
+
+    if(this.game.delay % 1 === 0) {
       action = agent.act(moves);
       this.game.head = this.game.snake[this.game.snake.length - 1];
       this.game.tail = this.game.snake.shift();
 
       var current_head_x = this.game.head.x;
       var current_head_y = this.game.head.y;
-
       var change_x = this.negativeCheck(current_head_x, this.game.food.x);
       var change_y = this.negativeCheck(current_head_y, this.game.food.y);
-      
-      var wall_change_x;
-      var wall_change_y;
 
       this.game.new_node_x = this.game.tail.x;
       this.game.new_node_y = this.game.tail.y;
 
-      if(this.game.snakeDirection === 'right') {
-        wall_change_x = 600;
-        if (action === 1) {
-          this.game.tail.x = this.game.head.x;
-          this.game.tail.y = this.game.head.y - this.game.snakeSize;
-          this.game.snakeDirection = 'up';
-          
-        }
-
-        else if (action === 2) {
-          this.game.tail.x = this.game.head.x;
-          this.game.tail.y = this.game.head.y + this.game.snakeSize;
-          this.game.snakeDirection = 'down';
-        }
-
-        else if (action === 0) {
-          this.game.tail.x = this.game.head.x + this.game.snakeSize;
-          this.game.tail.y = this.game.head.y;
-        } 
-
-      } else if(this.game.snakeDirection === 'left') {
-        wall_change_x = -200;
-        if (action === 1) {
-          this.game.tail.x = this.game.head.x;
-          this.game.tail.y = this.game.head.y + this.game.snakeSize;
-          this.game.snakeDirection = 'down';
-        }
-
-        else if (action === 2) {
-          this.game.tail.x = this.game.head.x;
-          this.game.tail.y = this.game.head.y - this.game.snakeSize;
-          this.game.snakeDirection = 'up';
-        }
-
-        else if (action === 0) {
-          this.game.tail.x = this.game.head.x - this.game.snakeSize;
-          this.game.tail.y = this.game.head.y;
-        }
-
-      } else if(this.game.snakeDirection === 'up') {
-          wall_change_y = -75;
-          if (action === 1) {
-            this.game.tail.x = this.game.head.x - this.game.snakeSize;
-            this.game.tail.y = this.game.head.y;
-            this.game.snakeDirection = 'left';
-          }
-
-          else if (action === 2) {
-            this.game.tail.x = this.game.head.x + this.game.snakeSize;
-            this.game.tail.y = this.game.head.y;
-            this.game.snakeDirection = 'right';
-          }
-
-          else if (action === 0) {
-            this.game.tail.x = this.game.head.x;
-            this.game.tail.y = this.game.head.y - this.game.snakeSize;
-          }
-
-      } else if(this.game.snakeDirection === 'down') {
-          wall_change_y = 525;
-          if (action === 1) {
-            this.game.tail.x = this.game.head.x + this.game.snakeSize;
-            this.game.tail.y = this.game.head.y;
-            this.game.snakeDirection = 'right';
-          }
-
-          else if (action === 2) {
-            this.game.tail.x = this.game.head.x - this.game.snakeSize;
-            this.game.tail.y = this.game.head.y;
-            this.game.snakeDirection = 'left';
-          }
-
-          else if (action === 0) {
-            this.game.tail.x = this.game.head.x;
-            this.game.tail.y = this.game.head.y + this.game.snakeSize;
-          }
-      }
-
-      //console.log("x:" + this.game.head.x + " y: " + this.game.head.y);
-      this.game.snake.push(this.game.tail);
-      
-      
+      this.changeDirection(action);
       this.rewardDistance (change_x, change_y);
       this.wallCheck ();
-      this.checkCollisions();
-      
+      this.checkSelf ();
+      this.checkCollisions ();
     }
-
   },
 
   checkCollisions: function() {
@@ -226,7 +111,6 @@ gameState.prototype = {
 
     for(var i = 0; i < this.game.snake.length - 2; i++) {
       if(this.game.head.x === this.game.snake[i].x && this.game.head.y === this.game.snake[i].y) {
-        //console.log('Collision');
         this.game.fatalCollision = true;
       }
     }
@@ -237,7 +121,6 @@ gameState.prototype = {
     }
 
     if(this.game.food.x === this.game.head.x && this.game.food.y === this.game.head.y) {
-      //console.log("COLLISION");
       this.game.goodCollision = true;
       this.game.food.destroy();
       this.createFood();
@@ -257,7 +140,7 @@ gameState.prototype = {
       score_amt ++;
       agent.learn(100);
     }
-    
+
   },
 
   rewardDistance: function (first_x, first_y) {
@@ -274,11 +157,10 @@ gameState.prototype = {
     var new_y = this.negativeCheck (head_y, apple_y);
     
     if(new_x > first_x && new_y > first_y) {
-      agent.learn (-10);
-    } else if (new_x < first_x && nex_y < first_y) {
-        agent.learn (10);
+      agent.learn (-25);
+    } else if (new_x < first_x && new_y < first_y) {
+        agent.learn (50);
     }
-
   },
 
   //Deals with negatives in the x and y
@@ -298,7 +180,7 @@ gameState.prototype = {
         return num1 - num2;
       }
       else {
-        num2 = Math.abs (num2)
+        num2 = Math.abs (num2);
         return num2 - num1;
       }
     }
@@ -314,10 +196,9 @@ gameState.prototype = {
   wallCheck: function () {
     //Get wall placement
     var right_wall = 600;
-    var left_wall = -200
+    var left_wall = -200;
     var top_wall = 525;
     var bottom_wall = -75;
-
 
     //Check how close the head is to the wall
     var right_difference = this.negativeCheck (this.game.head.x, right_wall);
@@ -342,6 +223,99 @@ gameState.prototype = {
     //Clear all values
     game_counter = 0;
     score_amt = 0;
+  },
+
+  checkSelf: function () {
+    if(this.game.snakeDirection === 'right' || this.game.snakeDirection === 'left') {
+      for(var i = 0; i < this.game.snake.length - 2; i++) {
+        if(this.game.snake[i].y + 25 === this.game.head.y || this.game.snake[i].y - 25 === this.game.head.y) {
+            agent.learn(-50);
+        }
+      }
+    } else if(this.game.snakeDirection === 'up' || this.game.snakeDirection === 'down') {
+      for(var j = 0; j < this.game.snake.length - 2; j++) {
+        if(this.game.snake[j].x + 25 === this.game.head.x || this.game.snake[j].x - 25 === this.game.head.x) {
+          agent.learn(-50);
+        }
+      }
+    }
+  },
+
+  changeDirection: function (action) {
+    if(this.game.snakeDirection === 'right') {
+      if (action === 1) {
+        this.game.tail.x = this.game.head.x;
+        this.game.tail.y = this.game.head.y - this.game.snakeSize;
+        this.game.snakeDirection = 'up';
+      }
+
+      else if (action === 2) {
+        this.game.tail.x = this.game.head.x;
+        this.game.tail.y = this.game.head.y + this.game.snakeSize;
+        this.game.snakeDirection = 'down';
+      }
+
+      else if (action === 0) {
+        this.game.tail.x = this.game.head.x + this.game.snakeSize;
+        this.game.tail.y = this.game.head.y;
+      }
+
+    } else if(this.game.snakeDirection === 'left') {
+      if (action === 1) {
+        this.game.tail.x = this.game.head.x;
+        this.game.tail.y = this.game.head.y + this.game.snakeSize;
+        this.game.snakeDirection = 'down';
+      }
+
+      else if (action === 2) {
+        this.game.tail.x = this.game.head.x;
+        this.game.tail.y = this.game.head.y - this.game.snakeSize;
+        this.game.snakeDirection = 'up';
+      }
+
+      else if (action === 0) {
+        this.game.tail.x = this.game.head.x - this.game.snakeSize;
+        this.game.tail.y = this.game.head.y;
+      }
+
+    } else if(this.game.snakeDirection === 'up') {
+      if (action === 1) {
+        this.game.tail.x = this.game.head.x - this.game.snakeSize;
+        this.game.tail.y = this.game.head.y;
+        this.game.snakeDirection = 'left';
+      }
+
+      else if (action === 2) {
+        this.game.tail.x = this.game.head.x + this.game.snakeSize;
+        this.game.tail.y = this.game.head.y;
+        this.game.snakeDirection = 'right';
+      }
+
+      else if (action === 0) {
+        this.game.tail.x = this.game.head.x;
+        this.game.tail.y = this.game.head.y - this.game.snakeSize;
+      }
+
+    } else if(this.game.snakeDirection === 'down') {
+      if (action === 1) {
+        this.game.tail.x = this.game.head.x + this.game.snakeSize;
+        this.game.tail.y = this.game.head.y;
+        this.game.snakeDirection = 'right';
+      }
+
+      else if (action === 2) {
+        this.game.tail.x = this.game.head.x - this.game.snakeSize;
+        this.game.tail.y = this.game.head.y;
+        this.game.snakeDirection = 'left';
+      }
+
+      else if (action === 0) {
+        this.game.tail.x = this.game.head.x;
+        this.game.tail.y = this.game.head.y + this.game.snakeSize;
+      }
+    }
+
+    this.game.snake.push(this.game.tail);
   }
 
 };

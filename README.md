@@ -1,7 +1,10 @@
 # snake_deep_learning
 Implementation of Snake using Phaser and QLearning to teach a bot how to play snake. 
 
+
 Requires having node js installed on your machine
+(Run all commands in the snake_deep_learning folder)
+
 To install dependencies run : "npm install"
 
 To start the app: "node app.js"
